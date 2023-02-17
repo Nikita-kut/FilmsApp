@@ -1,44 +1,25 @@
 package kut.nikita.filmsapp.data
 
+import android.content.Context
+import kotlinx.serialization.decodeFromString
+import kotlinx.serialization.json.Json
 import kut.nikita.filmsapp.data.model.FilmDto
+import okio.IOException
 
-class FilmListRepository {
+class FilmListRepository(private val appContext: Context) {
 
-    suspend fun fetchChipsList(): List<String> =
-        listOf("Боевики", "Драмы", "Комедии", "Артхаус", "Мелодрамы")
+    suspend fun fetchChipsList(): List<String> = getDataFromAssetsJson("Chips.json")
 
-    suspend fun fetchFilmList(): List<FilmDto> = listOf(
-        FilmDto(
-            id = "1",
-            name = "Гнев человеческий",
-            phone = "",
-            date_publication = "",
-            rating = 3,
-            description = "Фильм про Джейсона Стетхема крутого",
-        ),
-        FilmDto(
-            id = "2",
-            name = "Мортал комбат",
-            phone = "",
-            date_publication = "",
-            rating = 5,
-            description = "Сабзиро и Скорпион дерутся",
-        ),
-        FilmDto(
-            id = "3",
-            name = "Упс... Приплыли",
-            phone = "",
-            date_publication = "",
-            rating = 4,
-            description = "Какие-то зверушки плывут на бочке",
-        ),
-        FilmDto(
-            id = "4",
-            name = "The Box",
-            phone = "",
-            date_publication = "",
-            rating = 2,
-            description = "Женщина поёт в микрофон 10 часов",
-        ),
-    )
+    suspend fun fetchFilmList(): List<FilmDto> = getDataFromAssetsJson("FilmList.json")
+
+    private inline fun <reified T> getDataFromAssetsJson(fileName: String): T =
+        try {
+            appContext.assets.open(fileName)
+                .bufferedReader()
+                .use { it.readText() }.let { jsonString ->
+                    Json.decodeFromString(jsonString)
+                }
+        } catch (e: Exception) {
+            throw IOException()
+        }
 }

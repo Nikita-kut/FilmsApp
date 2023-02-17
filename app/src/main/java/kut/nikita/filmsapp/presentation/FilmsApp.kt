@@ -7,7 +7,7 @@ import kut.nikita.filmsapp.domain.GetFilmUseCase
 
 class FilmsApp : Application() {
 
-    private val filmListRepository = FilmListRepository()
+    private val filmListRepository = FilmListRepository(this)
 
     val filmListUseCase = FilmListUseCase(filmListRepository)
 
