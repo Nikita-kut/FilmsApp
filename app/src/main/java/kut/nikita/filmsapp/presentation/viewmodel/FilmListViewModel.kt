@@ -1,10 +1,8 @@
 package kut.nikita.filmsapp.presentation.viewmodel
 
 import android.util.Log
-import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider.AndroidViewModelFactory.Companion.APPLICATION_KEY
-import androidx.lifecycle.createSavedStateHandle
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
@@ -20,7 +18,6 @@ import kut.nikita.filmsapp.presentation.FilmsApp
 
 class FilmListViewModel(
     private val filmListUseCase: FilmListUseCase,
-    private val savedStateHandle: SavedStateHandle,
 ) : ViewModel() {
 
     val chips: Flow<List<String>> get() = _chips
@@ -59,9 +56,8 @@ class FilmListViewModel(
 
         val FACTORY = viewModelFactory {
             initializer {
-                val savedState = createSavedStateHandle()
                 val useCase = (this[APPLICATION_KEY] as FilmsApp).filmListUseCase
-                FilmListViewModel(useCase, savedState)
+                FilmListViewModel(useCase)
             }
         }
     }
