@@ -11,6 +11,7 @@ buildscript {
         json_serialization_version = '1.2.1'
         lifecycle_version = '2.5.1'
         navigation_compose_version = '2.5.3'
+        retrofit_serialization_version = '0.8.0'
     }
 }// Top-level build file where you can add configuration options common to all sub-projects/modules.
 plugins {
