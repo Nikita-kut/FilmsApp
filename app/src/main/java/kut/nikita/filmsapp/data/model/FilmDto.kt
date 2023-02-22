@@ -17,4 +17,8 @@ data class FilmDto(
     val rating: Int,
     @SerialName("description")
     val description: String,
+    @SerialName("genre")
+    val genre: String,
+    @SerialName("image_name")
+    val image_name: String,
 )

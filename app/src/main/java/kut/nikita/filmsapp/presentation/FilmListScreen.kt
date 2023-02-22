@@ -1,6 +1,5 @@
 package kut.nikita.filmsapp.presentation
 
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -10,25 +9,27 @@ import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.Card
-import androidx.compose.material.MaterialTheme
-import androidx.compose.material.Text
+import androidx.compose.material.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.dimensionResource
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import coil.compose.AsyncImage
+import coil.decode.SvgDecoder
+import coil.request.ImageRequest
 import kut.nikita.filmsapp.R
 import kut.nikita.filmsapp.domain.model.Film
+import kut.nikita.filmsapp.presentation.components.RatingBar
 import kut.nikita.filmsapp.presentation.viewmodel.FilmListViewModel
-import kut.nikita.filmsapp.ui.theme.FilmsAppTheme
 
 @Composable
 fun FilmListScreen(
@@ -37,56 +38,87 @@ fun FilmListScreen(
 ) {
     val chips: List<String> by filmListViewModel.chips.collectAsState(initial = emptyList())
     val films: List<Film> by filmListViewModel.films.collectAsState(initial = emptyList())
+    val searchText: String by filmListViewModel.searchText.collectAsState(initial = "")
+    val selectedChip: String? by filmListViewModel.selectedChip.collectAsState(initial = "")
     Column(
-        Modifier.padding(dimensionResource(id = R.dimen.size_16)),
+        Modifier
+            .padding(dimensionResource(id = R.dimen.size_16)),
         verticalArrangement = Arrangement.spacedBy(dimensionResource(id = R.dimen.size_16))
     ) {
-        Toolbar(chips)
+        Toolbar(
+            chips,
+            selectedChip,
+            searchText,
+            filmListViewModel::changeSearchText,
+            filmListViewModel::clearSearchText,
+            filmListViewModel::onChipClick,
+        )
         FilmList(films, onFilmClick)
     }
 }
 
 @Composable
-fun Toolbar(chipsList: List<String>) {
-    Column() {
-        Row() {
-            Spacer(modifier = Modifier.weight(1f))
-            Image(
-                painter = painterResource(id = R.drawable.ic_search),
-                contentDescription = "",
-                Modifier.size(dimensionResource(id = R.dimen.size_20))
-            )
-        }
+fun Toolbar(
+    chipsList: List<String>,
+    selectedChip: String?,
+    searchText: String,
+    onSearchTextChanged: (String) -> Unit,
+    onClearIconClick: () -> Unit,
+    onChipClick: (String?) -> Unit,
+) {
+    Column {
+        SearchBar(
+            searchText = searchText,
+            onSearchTextChanged = onSearchTextChanged,
+            onClearClick = onClearIconClick,
+        )
         Text(
             text = stringResource(id = R.string.film_list_title),
             modifier = Modifier.padding(vertical = dimensionResource(id = R.dimen.size_22)),
             style = MaterialTheme.typography.subtitle2,
-            fontSize = dimensionResource(id = R.dimen.text_size_16).value.sp
+            fontSize = 16.sp
         )
-        LazyRow(horizontalArrangement = Arrangement.spacedBy(dimensionResource(id = R.dimen.size_6))) {
-            items(chipsList) { chip ->
-                Chip(chip = chip)
-            }
+        ChipsList(chipsList = chipsList, selectedChip = selectedChip, onChipClick)
+    }
+}
+
+@Composable
+fun ChipsList(chipsList: List<String>, selectedChip: String?, onChipClick: (String?) -> Unit) {
+    LazyRow(horizontalArrangement = Arrangement.spacedBy(dimensionResource(id = R.dimen.size_6))) {
+        items(chipsList) { chip ->
+            Chip(chip = chip, selectedChip = selectedChip, onChipClick)
         }
     }
 }
 
 @Composable
-fun Chip(chip: String) {
-    Text(
-        text = chip,
-        fontSize = dimensionResource(id = R.dimen.text_size_10).value.sp,
-        modifier = Modifier
-            .border(
-                width = dimensionResource(id = R.dimen.size_1_5),
-                color = Color.Black,
-                shape = RoundedCornerShape(dimensionResource(id = R.dimen.size_10))
-            )
-            .padding(
-                horizontal = dimensionResource(id = R.dimen.size_9),
-                vertical = dimensionResource(id = R.dimen.size_4)
-            )
-    )
+fun Chip(chip: String, selectedChip: String?, onChipClick: (String?) -> Unit) {
+    TextButton(
+        onClick = {
+            selectedChip?.also {
+                if (it != chip) onChipClick.invoke(chip) else onChipClick.invoke(null)
+            } ?: onChipClick.invoke(chip)
+        },
+        contentPadding = PaddingValues(dimensionResource(id = R.dimen.size_0)),
+        colors = ButtonDefaults.buttonColors(backgroundColor = Color.Transparent)
+    ) {
+        Text(
+            text = chip,
+            fontSize = 10.sp,
+            modifier = Modifier
+                .border(
+                    width = dimensionResource(id = R.dimen.size_1_5),
+                    color = selectedChip?.let {
+                        if (chip == selectedChip) Color.Red else Color.Black
+                    } ?: Color.Black,
+                    shape = RoundedCornerShape(dimensionResource(id = R.dimen.size_10))
+                )
+                .padding(
+                    horizontal = dimensionResource(id = R.dimen.size_9),
+                    vertical = dimensionResource(id = R.dimen.size_4)
+                )
+        )
+    }
 }
 
 @Composable
@@ -106,46 +138,45 @@ fun FilmList(filmList: List<Film>, onFilmClick: (String) -> Unit) {
 @Composable
 fun FilmCard(film: Film, onFilmClick: (String) -> Unit) {
     Card(
-        modifier = Modifier.size(
-            width = dimensionResource(id = R.dimen.size_150),
-            height = dimensionResource(id = R.dimen.size_365)
-        )
-            .clickable { onFilmClick(film.id) }
+        modifier = Modifier
+            .size(
+                width = dimensionResource(id = R.dimen.size_150),
+                height = dimensionResource(id = R.dimen.size_365)
+            )
+            .clickable { onFilmClick(film.id) },
+        elevation = dimensionResource(id = R.dimen.size_0),
     ) {
         Column() {
-            Image(
-                painter = painterResource(id = R.drawable.ic_launcher_background),
+            AsyncImage(
+                model = ImageRequest.Builder(LocalContext.current)
+                    .data("file:///android_asset/${film.imageName}")
+                    .decoderFactory(SvgDecoder.Factory())
+                    .build(),
                 contentDescription = "",
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(dimensionResource(id = R.dimen.size_216))
-                    .border(
-                        width = dimensionResource(id = R.dimen.size_0),
-                        color = Color.Black,
-                        shape = RoundedCornerShape(dimensionResource(id = R.dimen.size_10))
-                    ),
+                    .clip(RoundedCornerShape(dimensionResource(id = R.dimen.size_10))),
                 contentScale = ContentScale.Crop
             )
             Text(
                 text = film.name,
-                fontSize = dimensionResource(id = R.dimen.text_size_14).value.sp,
+                fontSize = 14.sp,
                 style = MaterialTheme.typography.subtitle2,
                 modifier = Modifier.padding(top = dimensionResource(id = R.dimen.size_8))
             )
             Text(
                 text = film.description,
-                fontSize = dimensionResource(id = R.dimen.text_size_12).value.sp,
+                fontSize = 12.sp,
                 style = MaterialTheme.typography.body1,
-                modifier = Modifier.padding(top = dimensionResource(id = R.dimen.size_10))
+                modifier = Modifier
+                    .padding(
+                        top = dimensionResource(id = R.dimen.size_10),
+                        bottom = dimensionResource(id = R.dimen.size_10)
+                    )
+                    .weight(1f),
             )
+            RatingBar(rating = film.rating, maxStars = 5)
         }
-    }
-}
-
-@Preview(showBackground = true)
-@Composable
-fun DefaultPreview() {
-    FilmsAppTheme {
-        FilmListScreen {}
     }
 }
