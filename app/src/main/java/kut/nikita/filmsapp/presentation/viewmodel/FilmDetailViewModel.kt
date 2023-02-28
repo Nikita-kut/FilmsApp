@@ -53,7 +53,9 @@ class FilmDetailViewModel(
             phone = "",
             datePublication = "",
             rating = 0,
-            description = ""
+            description = "",
+            genre = "",
+            ""
         )
     }
 }
